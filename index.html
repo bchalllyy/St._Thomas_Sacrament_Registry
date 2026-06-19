@@ -431,6 +431,14 @@ var SAC_TEXT_FIELDS = {
   subdiaconate: ['subChurch','subLocation','subBishop'],
   religious:    ['relOrder','relChurch','relLocation'],
 };
+// Values pre-filled into a brand-new record. A field holding only its default
+// is treated as "not user-entered" so an untouched section stays optional.
+var SAC_FIELD_DEFAULTS = {
+  confChurch:'St. Thomas Syro-Malabar Catholic Forane Church',
+  confLocation:'Orange',
+  commChurch:'St. Thomas Syro-Malabar Catholic Forane Church',
+  commLocation:'Orange',
+};
 var SAC_DATE_FIELDS = {
   confirmation:'confDate', communion:'commDate', marriage:'marriageDate',
   subdiaconate:'subDate', religious:'relDate',
@@ -854,7 +862,11 @@ function sacSectionStatus(key){
     var el=document.getElementById('f_'+tk);
     return el?el.value.trim():'';
   });
-  var anyFilled=ds.any||textVals.some(Boolean);
+  // A field equal to its autofilled default doesn't count toward "any user input".
+  var nonDefaultFilled=textKeys.some(function(tk,i){
+    return textVals[i] && textVals[i]!==(SAC_FIELD_DEFAULTS[tk]||'');
+  });
+  var anyFilled=ds.any||nonDefaultFilled;
   var allFilled=ds.ok&&textVals.every(Boolean);
   return !anyFilled?'empty':(allFilled?'complete':'partial');
 }
@@ -1006,6 +1018,13 @@ function saveRecord(){
     relChurch:document.getElementById('f_relChurch').value.trim(),
     relLocation:document.getElementById('f_relLocation').value.trim(),
   };
+  // Don't persist untouched (default-only) sacrament sections.
+  SAC_KEYS.forEach(function(k){
+    if(sacSectionStatus(k)==='empty'){
+      rec[SAC_DATE_FIELDS[k]]='';
+      (SAC_TEXT_FIELDS[k]||[]).forEach(function(tk){rec[tk]='';});
+    }
+  });
   if(editingId){records=records.map(function(x){return x.id===id?rec:x;});}
   else{records.push(rec);}
   save();closeModal();
