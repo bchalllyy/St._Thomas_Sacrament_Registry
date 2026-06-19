@@ -725,14 +725,18 @@ function printCertificate(id) {
   }
   document.getElementById('certContent').innerHTML=html;
   document.getElementById('certOverlay').classList.add('open');
+  // Pre-build the off-screen print DOM now so the (base64) images are already
+  // loaded/decoded by the time the user clicks Print. This lets printCertTab()
+  // call window.print() synchronously — required for it to work on Safari/Mac.
+  buildPrintArea(r);
 }
 function closeCert(){document.getElementById('certOverlay').classList.remove('open');}
 
-function printCertTab() {
-  var r=records.filter(function(x){return x.id===currentCertId;})[0];
-  if(!r) return;
+// Populate the hidden #printArea for the given record. Safe to call eagerly.
+function buildPrintArea(r) {
   var pa=document.getElementById('printArea');
   if(!pa){pa=document.createElement('div');pa.id='printArea';document.body.appendChild(pa);}
+  pa.setAttribute('data-cert-id', r.id);
   pa.innerHTML=
     '<div class="print-page">'+
       '<div style="position:relative;width:100%;">'+
@@ -742,24 +746,26 @@ function printCertTab() {
     '</div>'+
     '<div class="print-page print-page-p2">'+
       '<div style="position:relative;width:100%;">'+
-        '<img id="printP2Img" class="cert-bg" src="'+CERT_P2+'" style="width:100%;height:auto;display:block;">'+
+        '<img class="cert-bg" src="'+CERT_P2+'" style="width:100%;height:auto;display:block;">'+
         buildBackOverlays(r,'14pt')+
       '</div>'+
     '</div>';
-  // Wait for EVERY image (both pages) to be fully decoded before printing.
-  // Safari/Mac is unreliable if window.print() fires before images are painted,
-  // and decode() is far more dependable there than relying on .complete/onload.
-  var imgs=Array.prototype.slice.call(pa.querySelectorAll('img'));
-  Promise.all(imgs.map(function(img){
-    if(typeof img.decode==='function'){ return img.decode().catch(function(){}); }
-    return new Promise(function(res){
-      if(img.complete){ res(); }
-      else { img.onload=res; img.onerror=res; }
-    });
-  })).then(function(){
-    // Give the print layout a frame to settle, then print (Safari needs this).
-    requestAnimationFrame(function(){ setTimeout(function(){ window.print(); }, 60); });
-  });
+  return pa;
+}
+
+function printCertTab() {
+  var r=records.filter(function(x){return x.id===currentCertId;})[0];
+  if(!r) return;
+  // Ensure the print DOM exists and matches the current record (it normally
+  // was pre-built on modal open). Build synchronously if missing/stale.
+  var pa=document.getElementById('printArea');
+  if(!pa || pa.getAttribute('data-cert-id')!==String(r.id)){
+    pa=buildPrintArea(r);
+  }
+  // Call print synchronously, inside the click's user-activation context.
+  // Safari/Mac drops the user gesture if print() is deferred via Promise/
+  // setTimeout, causing the dialog to silently never appear.
+  window.print();
 }
 
 function openModal(id) {
