@@ -802,11 +802,14 @@ function openModal(id) {
     }
   } else {
     document.getElementById('modalTitle').textContent='New Sacrament Record';
-    document.getElementById('f_confChurch').value='St. Thomas Syro-Malabar Catholic Forane Church';
-    document.getElementById('f_confLocation').value='Orange';
-    document.getElementById('f_commChurch').value='St. Thomas Syro-Malabar Catholic Forane Church';
-    document.getElementById('f_commLocation').value='Orange';
   }
+  // Prefill default church/city for Confirmation & Communion whenever those fields are
+  // empty (new record, or editing a record where the section was left blank), so the user
+  // can complete the section without retyping. Defaults alone won't trigger validation.
+  Object.keys(SAC_FIELD_DEFAULTS).forEach(function(tk){
+    var el=document.getElementById('f_'+tk);
+    if(el && !el.value.trim()) el.value=SAC_FIELD_DEFAULTS[tk];
+  });
   SAC_KEYS.forEach(function(k){ updateSacCheckmark(k); });
   document.getElementById('modalOverlay').classList.add('open');
 }
