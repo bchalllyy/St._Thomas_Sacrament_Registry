@@ -1245,10 +1245,27 @@ function doLogout(){ if(auth) auth.signOut(); }
   if(!s)return;
   var l=document.getElementById('loginLogo');
   if(l)l.src=s.src;
+  // Build a circular favicon so the logo's square corners are transparent (matches the round in-app logo).
   var fav=document.getElementById('favicon');
-  if(fav)fav.href=s.src;
   var favA=document.getElementById('faviconApple');
-  if(favA)favA.href=s.src;
+  function setIcons(href){ if(fav)fav.href=href; if(favA)favA.href=href; }
+  var img=new Image();
+  img.onload=function(){
+    try{
+      var size=128;
+      var c=document.createElement('canvas');
+      c.width=c.height=size;
+      var ctx=c.getContext('2d');
+      ctx.beginPath();
+      ctx.arc(size/2,size/2,size/2,0,Math.PI*2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(img,0,0,size,size);
+      setIcons(c.toDataURL('image/png'));
+    }catch(e){ setIcons(s.src); }
+  };
+  img.onerror=function(){ setIcons(s.src); };
+  img.src=s.src;
 })();
 
 if(auth){
