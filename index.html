@@ -114,7 +114,7 @@ input:focus,select:focus{border-color:var(--gold);}
 .cert-page-label{font-size:.75rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;}
 .cert-field{position:absolute;font-family:'Gill Sans','Gill Sans MT',Calibri,sans-serif;text-transform:uppercase;color:#1a1a1a;line-height:1;white-space:nowrap;overflow:hidden;text-align:center;}
 /* OPTIONAL SACRAMENT SECTIONS */
-.sac-toggle{display:flex;align-items:center;gap:.5rem;cursor:pointer;padding:.55rem .75rem;border:1px solid var(--border);border-radius:6px;background:var(--cream);transition:background .15s;user-select:none;}
+.sac-toggle{display:flex;align-items:center;gap:.5rem;cursor:pointer;padding:.55rem .75rem;border:1px solid var(--border);border-radius:6px;background:var(--cream);transition:background .15s;-webkit-user-select:none;user-select:none;}
 .sac-toggle:hover{background:var(--gold-lt);}
 .sac-toggle .arrow{transition:transform .2s;font-size:.7rem;color:var(--muted);}
 .sac-toggle.open .arrow{transform:rotate(90deg);}
@@ -144,10 +144,14 @@ label.label-error{color:var(--danger)!important;}
 /* PRINT STYLES */
 #printArea{display:none;}
 @media print{
-  @page{size:11in 8.5in landscape;margin:0;}
-  html,body{margin:0!important;padding:0!important;overflow:visible!important;}
+  /* NOTE: do NOT combine explicit dimensions with the `landscape` keyword —
+     that is invalid CSS and Safari/Mac falls back to portrait letter. */
+  @page{size:11in 8.5in;margin:0;}
+  html,body{margin:0!important;padding:0!important;overflow:visible!important;
+    -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
   body > *{display:none!important;}
-  #printArea{display:block!important;margin:0;padding:0;}
+  #printArea{display:block!important;margin:0;padding:0;
+    -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
   #printArea .cert-field:not(.cert-formno){
     font-family:'Gill Sans','Gill Sans MT',Calibri,sans-serif!important;
   }
@@ -157,9 +161,12 @@ label.label-error{color:var(--danger)!important;}
     font-weight:700!important;
     top:13.25%!important;
   }
+  /* Use absolute inch units, NOT vw/vh: Safari/Mac resolves viewport units against
+     the screen (not the sheet) when printing, which overflowed onto extra pages. */
   .print-page{
     position:relative;
-    width:100vw;
+    width:11in;
+    height:8.5in;
     overflow:hidden;
     container-type:inline-size;
   }
@@ -167,8 +174,8 @@ label.label-error{color:var(--danger)!important;}
     page-break-after:always;
     break-after:page;
   }
-  .print-page img{width:100%!important;height:auto!important;display:block!important;}
-  .print-page > div{position:relative!important;display:block!important;width:100%!important;}
+  .print-page img{width:11in!important;height:auto!important;display:block!important;}
+  .print-page > div{position:relative!important;display:block!important;width:11in!important;}
 }
 @media(max-width:700px){.layout{grid-template-columns:1fr;}.sidebar{height:40vh;}.form-row{grid-template-columns:1fr;}.detail-grid{grid-template-columns:1fr;}}
 </style>
@@ -739,11 +746,20 @@ function printCertTab() {
         buildBackOverlays(r,'14pt')+
       '</div>'+
     '</div>';
-  var p2img=document.getElementById('printP2Img');
-  if(p2img&&!p2img.complete){
-    p2img.onload=function(){window.print();};
-    p2img.onerror=function(){window.print();};
-  } else { window.print(); }
+  // Wait for EVERY image (both pages) to be fully decoded before printing.
+  // Safari/Mac is unreliable if window.print() fires before images are painted,
+  // and decode() is far more dependable there than relying on .complete/onload.
+  var imgs=Array.prototype.slice.call(pa.querySelectorAll('img'));
+  Promise.all(imgs.map(function(img){
+    if(typeof img.decode==='function'){ return img.decode().catch(function(){}); }
+    return new Promise(function(res){
+      if(img.complete){ res(); }
+      else { img.onload=res; img.onerror=res; }
+    });
+  })).then(function(){
+    // Give the print layout a frame to settle, then print (Safari needs this).
+    requestAnimationFrame(function(){ setTimeout(function(){ window.print(); }, 60); });
+  });
 }
 
 function openModal(id) {
