@@ -714,6 +714,22 @@ function buildOverlays(r, fs) {
   '<div class="cert-field cert-formno" style="left:13.6%;top:13.1%;width:10%;font-size:calc('+fs+' * 0.53);font-family:Arial Narrow,Arial,Helvetica,sans-serif;font-style:normal;font-weight:700;letter-spacing:0.08em;text-align:left;">'+certNum+'</div>';
 }
 
+// Safari freezes / throws a printing error when printing large base64 data: URI
+// images (it re-decodes them inefficiently for the print raster). Converting
+// them once to blob: object URLs prints reliably and uses far less memory.
+function dataURLtoObjectURL(dataURL){
+  var comma=dataURL.indexOf(',');
+  var meta=dataURL.substring(0,comma);
+  var mime=(meta.match(/data:([^;]+)/)||[])[1]||'application/octet-stream';
+  var bin=atob(dataURL.substring(comma+1));
+  var bytes=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++){ bytes[i]=bin.charCodeAt(i); }
+  return URL.createObjectURL(new Blob([bytes],{type:mime}));
+}
+var _certBgUrl, _certP2Url;
+function certBgURL(){ if(!_certBgUrl){ _certBgUrl=dataURLtoObjectURL(CERT_BG); } return _certBgUrl; }
+function certP2URL(){ if(!_certP2Url){ _certP2Url=dataURLtoObjectURL(CERT_P2); } return _certP2Url; }
+
 function printCertificate(id) {
   currentCertId=id;
   var r=records.filter(function(x){return x.id===id;})[0];
@@ -721,21 +737,20 @@ function printCertificate(id) {
   document.getElementById('certToolbarName').textContent=r.firstName;
   var html =
     '<div class="cert-page-wrap">'+
-      '<img class="cert-bg" src="'+CERT_BG+'" style="width:100%;height:auto;display:block;">'+
+      '<img class="cert-bg" src="'+certBgURL()+'" style="width:100%;height:auto;display:block;">'+
       buildOverlays(r,'14pt')+
     '</div>';
   if (hasOtherSacraments(r)) {
     html +=
       '<div class="cert-page-wrap">'+
-        '<img class="cert-bg" src="'+CERT_P2+'" style="width:100%;height:auto;display:block;">'+
+        '<img class="cert-bg" src="'+certP2URL()+'" style="width:100%;height:auto;display:block;">'+
         buildBackOverlays(r,'14pt')+
       '</div>';
   }
   document.getElementById('certContent').innerHTML=html;
   document.getElementById('certOverlay').classList.add('open');
-  // Pre-build the off-screen print DOM now so the (base64) images are already
-  // loaded/decoded by the time the user clicks Print. This lets printCertTab()
-  // call window.print() synchronously — required for it to work on Safari/Mac.
+  // Pre-build the off-screen print DOM now so the images are already loaded by
+  // the time the user clicks Print, so window.print() can fire synchronously.
   buildPrintArea(r);
 }
 function closeCert(){document.getElementById('certOverlay').classList.remove('open');}
@@ -745,10 +760,10 @@ function closeCert(){document.getElementById('certOverlay').classList.remove('op
 function buildCertPagesHTML(r){
   return ''+
     '<div class="print-page"><div>'+
-      '<img class="cert-bg" src="'+CERT_BG+'">'+buildOverlays(r,'14pt')+
+      '<img class="cert-bg" src="'+certBgURL()+'">'+buildOverlays(r,'14pt')+
     '</div></div>'+
     '<div class="print-page print-page-p2"><div>'+
-      '<img class="cert-bg" src="'+CERT_P2+'">'+buildBackOverlays(r,'14pt')+
+      '<img class="cert-bg" src="'+certP2URL()+'">'+buildBackOverlays(r,'14pt')+
     '</div></div>';
 }
 
