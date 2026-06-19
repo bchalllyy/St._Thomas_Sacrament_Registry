@@ -740,21 +740,6 @@ function printCertificate(id) {
 }
 function closeCert(){document.getElementById('certOverlay').classList.remove('open');}
 
-// Self-contained stylesheet for the isolated print iframe.
-// Mirrors the main @media print rules so the iframe prints identically.
-var PRINT_FRAME_CSS =
-  'html,body{margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
-  '@page{size:11in 8.5in;margin:0;}'+
-  '.print-page{position:relative;width:11in;height:8.5in;overflow:hidden;}'+
-  '.print-page:not(:last-child){page-break-after:always;break-after:page;}'+
-  '.print-page:last-child{page-break-after:auto;break-after:auto;}'+
-  '.print-page>div{position:relative;width:11in;height:8.5in;}'+
-  '.print-page img{width:11in;height:8.5in;display:block;}'+
-  '.cert-field{position:absolute;font-family:"Gill Sans","Gill Sans MT",Calibri,sans-serif;'+
-    'text-transform:uppercase;color:#1a1a1a;line-height:1;white-space:nowrap;overflow:hidden;text-align:center;}'+
-  '.cert-formno{font-family:"Arial Narrow",Arial,Helvetica,sans-serif!important;'+
-    'font-style:normal!important;font-weight:700!important;top:13.25%!important;}';
-
 // Build the front + back certificate pages. The back (P2) ALWAYS prints so it
 // lands on the physical back of the sheet, regardless of other sacraments.
 function buildCertPagesHTML(r){
@@ -767,56 +752,30 @@ function buildCertPagesHTML(r){
     '</div></div>';
 }
 
-// Pre-build BOTH print targets for a record (call eagerly on modal open):
-//  - #printArea  -> lets the browser's own Print (Cmd/Ctrl+P) work
-//  - #printFrame -> isolated iframe used by the Print button (reliable on Mac)
-// Building eagerly means the (base64) images are already loaded when the user
-// clicks, so we can print synchronously and keep the Safari user gesture.
+// Populate the hidden #printArea (call eagerly on modal open). The main
+// document's @media print rules turn this into the printed output, used by
+// both the Print button and the browser's own Print (Cmd/Ctrl+P).
 function buildPrintArea(r) {
-  var id=String(r.id);
-  var pages=buildCertPagesHTML(r);
-
   var pa=document.getElementById('printArea');
   if(!pa){pa=document.createElement('div');pa.id='printArea';document.body.appendChild(pa);}
-  pa.setAttribute('data-cert-id', id);
-  pa.innerHTML=pages;
-
-  var f=document.getElementById('printFrame');
-  if(!f){
-    f=document.createElement('iframe');
-    f.id='printFrame';
-    f.setAttribute('aria-hidden','true');
-    f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
-    document.body.appendChild(f);
-  }
-  var doc=f.contentWindow.document;
-  doc.open();
-  doc.write('<!doctype html><html><head><meta charset="utf-8"><style>'+
-    PRINT_FRAME_CSS+'</style></head><body>'+pages+'</body></html>');
-  doc.close();
-  f.setAttribute('data-cert-id', id);
+  pa.setAttribute('data-cert-id', String(r.id));
+  pa.innerHTML=buildCertPagesHTML(r);
   return pa;
 }
 
 function printCertTab() {
   var r=records.filter(function(x){return x.id===currentCertId;})[0];
   if(!r) return;
-  var f=document.getElementById('printFrame');
-  // Rebuild synchronously if the iframe is missing or for a different record.
-  if(!f || f.getAttribute('data-cert-id')!==String(r.id)){
+  // Keep #printArea in sync (normally pre-built on modal open).
+  var pa=document.getElementById('printArea');
+  if(!pa || pa.getAttribute('data-cert-id')!==String(r.id)){
     buildPrintArea(r);
-    f=document.getElementById('printFrame');
   }
-  // Print the isolated iframe synchronously, inside the click's user-activation
-  // context. This is the reliable way to print specific content on Safari/Mac;
-  // calling window.print() on the main document was failing to open the dialog.
-  try{
-    f.contentWindow.focus();
-    f.contentWindow.print();
-  }catch(e){
-    // Fallback to printing the main document (#printArea via @media print).
-    window.print();
-  }
+  // Print synchronously, inside the click's user-activation context. We print
+  // the main document (NOT a hidden iframe): printing a hidden iframe with large
+  // embedded images froze Safari/Mac. The @media print rules hide everything
+  // except #printArea, so only the certificate prints.
+  window.print();
 }
 
 function openModal(id) {
