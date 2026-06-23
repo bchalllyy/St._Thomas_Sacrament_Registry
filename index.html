@@ -43,6 +43,7 @@ header{background:var(--ink);color:var(--white);padding:0 2rem;display:flex;alig
 .record-item .ri-meta{font-size:.82rem;color:var(--muted);}
 .ri-badges{display:flex;gap:.3rem;margin-top:.25rem;flex-wrap:wrap;}
 .ri-badge{font-size:.62rem;padding:.1rem .4rem;border-radius:3px;background:var(--gold-lt);color:var(--ink);font-weight:600;letter-spacing:.03em;}
+.ri-badge.ri-badge-more{background:var(--border);cursor:default;}
 .empty-state{padding:2rem 1.25rem;text-align:center;color:var(--muted);font-size:.85rem;line-height:1.6;}
 .main{overflow-y:auto;padding:2rem;display:flex;flex-direction:column;gap:1.5rem;}
 .welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;color:var(--muted);}
@@ -102,7 +103,12 @@ input:focus,select:focus{border-color:var(--gold);}
 .cert-preview-box .cp-info{flex:1;}
 .cert-preview-box .cp-title{font-weight:600;font-size:.9rem;margin-bottom:.2rem;}
 .cert-preview-box .cp-sub{font-size:.78rem;color:var(--muted);}
+.cert-preview-box .cp-note{font-size:.74rem;font-style:italic;color:var(--gold);margin-top:.35rem;display:flex;align-items:center;gap:.35rem;}
+.cert-preview-box .cp-note::before{content:'↩';font-style:normal;font-size:.85rem;opacity:.8;}
 .cert-preview-box + .cert-preview-box{margin-top:.6rem;}
+/* Hairline "Print individually" caption separating combined vs single certs. */
+.cert-or-sep{margin:1rem 0 .6rem;font-size:.66rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);display:flex;align-items:center;gap:.7rem;}
+.cert-or-sep::before,.cert-or-sep::after{content:'';flex:1;height:1px;background:var(--gold-lt);}
 .cert-empty-note{border:1px dashed var(--gold-lt);border-radius:8px;padding:.85rem 1.1rem;background:#fffdf8;color:var(--muted);font-size:.82rem;}
 .cert-req-row{margin-top:.6rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
 .cert-req-chip{font-size:.72rem;padding:.18rem .5rem;border-radius:3px;background:var(--cream);border:1px solid var(--border);color:var(--muted);display:inline-flex;align-items:center;gap:.35rem;}
@@ -310,6 +316,7 @@ label.label-error{color:var(--danger)!important;}
         </div>
         <div class="form-row">
           <div class="form-group"><label>City</label><input type="text" id="f_commLocation" placeholder="e.g. Chicago" oninput="updateSacCheckmark('communion')"></div>
+          <div class="form-group"><label>Minister</label><input type="text" id="f_commMinister" placeholder="e.g. Bishop Joy Alappat" oninput="updateSacCheckmark('communion')"></div>
         </div>
       </div>
 
@@ -327,7 +334,7 @@ label.label-error{color:var(--danger)!important;}
         </div>
         <div class="form-row">
           <div class="form-group"><label>City</label><input type="text" id="f_confLocation" placeholder="e.g. Chicago" oninput="updateSacCheckmark('confirmation')"></div>
-          <div class="form-group"><label>Bishop / Minister</label><input type="text" id="f_confMinister" placeholder="e.g. Bishop Joy Alappat" oninput="updateSacCheckmark('confirmation')"></div>
+          <div class="form-group"><label>Minister</label><input type="text" id="f_confMinister" placeholder="e.g. Bishop Joy Alappat" oninput="updateSacCheckmark('confirmation')"></div>
         </div>
       </div>
 
@@ -472,7 +479,7 @@ var SAC_LABELS = {baptism:'Baptism',confirmation:'Confirmation',communion:'Solem
 var SAC_TEXT_FIELDS = {
   baptism:      ['baptismChurch','baptismLocation','officiant','godfather','godmother'],
   confirmation: ['confChurch','confLocation','confMinister'],
-  communion:    ['commChurch','commLocation'],
+  communion:    ['commChurch','commLocation','commMinister'],
   marriage:     ['marriageSpouse','marriageChurch','marriageLocation','marriageOfficiant'],
   subdiaconate: ['subChurch','subLocation','subBishop'],
   religious:    ['relOrder','relChurch','relLocation'],
@@ -530,12 +537,14 @@ function primaryDate(r){
 // embed the full SVG path).
 var CERT_SVG = '<svg class="cert-icon" viewBox="0 0 431.17 431.17" fill="currentColor" stroke="none"><path d="M68.831,99.602h255.814c7.878,0,14.265-6.387,14.265-14.265c0-7.878-6.387-14.265-14.265-14.265H68.831c-7.878,0-14.265,6.387-14.265,14.265C54.566,93.215,60.953,99.602,68.831,99.602z"/><path d="M68.831,160.465h255.814c7.878,0,14.265-6.387,14.265-14.265c0-7.878-6.387-14.265-14.265-14.265H68.831c-7.878,0-14.265,6.387-14.265,14.265C54.566,154.078,60.953,160.465,68.831,160.465z"/><path d="M204.549,192.799H68.831c-7.878,0-14.265,6.387-14.265,14.265c0,7.878,6.387,14.265,14.265,14.265h135.718c7.878,0,14.265-6.387,14.265-14.265C218.814,199.186,212.427,192.799,204.549,192.799z"/><path d="M430.373,409.679l-37.295-73.843l14.431-5.759c3.79-1.513,6.97-5.888,7.24-9.96l1.229-18.516c0.206-3.102,1.778-7.941,3.434-10.569l9.886-15.702c2.175-3.452,2.175-8.861,0.001-12.314l-9.887-15.702c-1.654-2.628-3.227-7.469-3.433-10.569l-1.228-18.516c-0.232-3.486-2.6-7.188-5.652-9.132V37.438c0-15.732-12.798-28.53-28.529-28.53H28.529C12.798,8.908,0,21.706,0,37.438v244.381c0,15.732,12.798,28.529,28.529,28.529h224.396l0.648,9.77c0.271,4.072,3.45,8.446,7.24,9.959l13.549,5.407l-37.474,74.195c-1.153,2.284-0.844,3.66-0.381,4.412c0.293,0.477,1.011,1.275,2.523,1.275c0.756,0,1.627-0.204,2.589-0.606l30.697-12.852c0.755-0.316,1.653-0.483,2.597-0.483c2.255,0,4.553,0.933,5.854,2.374l14.746,16.349c1.229,1.363,2.751,2.114,4.283,2.114c2.022,0,3.836-1.307,4.85-3.494l28.89-62.32c0.063-0.001,0.125-0.001,0.188-0.002l28.891,62.322c1.014,2.188,2.827,3.494,4.851,3.494c1.531,0,3.053-0.751,4.282-2.115l14.745-16.347c1.302-1.442,3.6-2.375,5.854-2.375c0.943,0,1.842,0.167,2.597,0.483l30.697,12.852c0.962,0.402,1.833,0.606,2.589,0.606c1.513,0,2.23-0.799,2.523-1.275C431.217,413.339,431.526,411.963,430.373,409.679z M28.529,37.438h352.039l0.002,156.56l-11.152-13.417c-2.036-2.449-5.764-4.094-9.275-4.094c-0.855,0-1.673,0.098-2.433,0.291l-17.998,4.581c-2.867,0.729-8.236,0.729-11.104,0l-17.996-4.581c-0.76-0.193-1.578-0.291-2.433-0.291c-3.512,0-7.239,1.645-9.275,4.094l-11.866,14.277c-1.984,2.389-6.099,5.379-8.983,6.53l-17.24,6.882c-3.791,1.513-6.971,5.887-7.241,9.959l-1.229,18.516c-0.205,3.102-1.777,7.941-3.433,10.569l-9.886,15.702c-2.175,3.452-2.175,8.862,0,12.314l4.085,6.488H28.529V37.438z M334.16,329.825c-33.497,0-60.652-27.154-60.652-60.652c0-33.498,27.155-60.652,60.652-60.652c33.498,0,60.654,27.154,60.654,60.652C394.815,302.671,367.658,329.825,334.16,329.825z"/></svg>';
 
-// One certificate "card" in the detail view.
-function certPreviewBox(title, sub, onclick){
+// One certificate "card" in the detail view. `note` is an optional subtle line
+// (e.g. to mention sacraments documented on the reverse of the baptism cert).
+function certPreviewBox(title, sub, onclick, note){
   return '<div class="cert-preview-box">'+
     '<span class="cp-icon">'+CERT_SVG+'</span>'+
     '<div class="cp-info"><div class="cp-title">'+title+'</div>'+
-    '<div class="cp-sub">'+sub+'</div></div>'+
+    '<div class="cp-sub">'+sub+'</div>'+
+    (note ? '<div class="cp-note">'+note+'</div>' : '')+'</div>'+
     '<button class="btn-sm gold" onclick="'+onclick+'">View &amp; Print</button>'+
     '</div>';
 }
@@ -559,6 +568,9 @@ var currentCertId = null;
 var currentCertList = ['baptism'];
 
 function refId(id) { return (id||'').split('_').pop().toUpperCase(); }
+// Join a list into readable prose: ['A'] -> 'A', ['A','B'] -> 'A & B',
+// ['A','B','C'] -> 'A, B & C'.
+function joinAnd(a){ return a.length<=1 ? (a[0]||'') : a.slice(0,-1).join(', ')+' & '+a[a.length-1]; }
 function formatDate(d) {
   if (!d) return '\u2014';
   var p = d.split('-').map(Number);
@@ -614,11 +626,13 @@ function ensureSacOpen(key){
   if(body&&!body.classList.contains('open'))toggleSac(toggle,key);
 }
 
+// Short pill labels so every sacrament on a record fits as a compact badge.
+var SAC_BADGE_LABELS = {baptism:'Baptism',communion:'Communion',confirmation:'Confirmation',marriage:'Marriage',subdiaconate:'Subdiaconate',religious:'Religious'};
 function sacBadges(r) {
+  // A pill for every sacrament the record holds (Baptism included), in form order.
   var badges = [];
-  SAC_KEYS.forEach(function(k){
-    var dateKey = SAC_DATE_FIELDS[k];
-    if (r[dateKey]) badges.push(SAC_LABELS[k]);
+  ALL_SAC_KEYS.forEach(function(k){
+    if (sacHasData(r,k)) badges.push(SAC_BADGE_LABELS[k]);
   });
   return badges;
 }
@@ -637,7 +651,16 @@ function renderList(filter) {
   }
   list.innerHTML=filtered.map(function(r){
     var badges = sacBadges(r);
-    var badgeHTML = badges.length ? '<div class="ri-badges">'+badges.map(function(b){return '<span class="ri-badge">'+b+'</span>';}).join('')+'</div>' : '';
+    // Show up to MAX_BADGES pills; collapse the rest into a "+N" overflow pill.
+    var MAX_BADGES = 3;
+    var shown = badges.slice(0, MAX_BADGES);
+    var overflow = badges.length - shown.length;
+    var badgeHTML = badges.length
+      ? '<div class="ri-badges">'
+          + shown.map(function(b){return '<span class="ri-badge">'+b+'</span>';}).join('')
+          + (overflow>0 ? '<span class="ri-badge ri-badge-more" title="'+badges.slice(MAX_BADGES).join(', ')+'">+'+overflow+'</span>' : '')
+        + '</div>'
+      : '';
     return '<div class="record-item'+(r.id===selectedId?' active':'')+'" onclick="selectRecord(\''+r.id+'\')">'+
       '<div class="ri-name">'+r.firstName+'</div>'+
       '<div class="ri-meta">'+(r.certNum?r.certNum+' \u00B7 ':'')+formatDate(primaryDate(r))+(r.officiant?' \u00B7 '+r.officiant:'')+'</div>'+
@@ -670,8 +693,8 @@ function selectRecord(id) {
     sacHTML += '<div><div class="detail-section-title">'+SAC_LABELS[k]+'</div><div class="detail-grid">';
     sacHTML += field('Date', formatDate(r[dateKey]));
     if (k==='baptism') { sacHTML += field('Church',r.baptismChurch||(r.baptismDate?HOME_CHURCH:'')); sacHTML += field('City',r.baptismLocation); sacHTML += field('Officiant',r.officiant); sacHTML += field('Godfather',r.godfather); sacHTML += field('Godmother',r.godmother); }
-    if (k==='confirmation') { sacHTML += field('Church',r.confChurch); sacHTML += field('City',r.confLocation); sacHTML += field('Bishop / Minister',r.confMinister); }
-    if (k==='communion') { sacHTML += field('Church',r.commChurch); sacHTML += field('City',r.commLocation); }
+    if (k==='confirmation') { sacHTML += field('Church',r.confChurch); sacHTML += field('City',r.confLocation); sacHTML += field('Minister',r.confMinister); }
+    if (k==='communion') { sacHTML += field('Church',r.commChurch); sacHTML += field('City',r.commLocation); sacHTML += field('Minister',r.commMinister); }
     if (k==='marriage') { sacHTML += field('Spouse',r.marriageSpouse); sacHTML += field('Church',r.marriageChurch); sacHTML += field('City',r.marriageLocation); sacHTML += field('Officiant',r.marriageOfficiant); }
     if (k==='subdiaconate') { sacHTML += field('Church',r.subChurch); sacHTML += field('City',r.subLocation); sacHTML += field('Bishop',r.subBishop); }
     if (k==='religious') { sacHTML += field('Congregation / Order',r.relOrder); sacHTML += field('Church',r.relChurch); sacHTML += field('City',r.relLocation); }
@@ -716,12 +739,26 @@ function selectRecord(id) {
 
   var certSectionsHTML = '';
   if (atHome) {
-    // Front = Baptism; back lists any of the other sacraments that have data.
-    var onCert = ['baptism'].concat(SAC_KEYS.filter(function(k){return sacHasData(r,k);}))
-                   .map(function(k){return CERT_LABELS[k];});
+    // Sacraments documented on the reverse of the baptism certificate.
+    var reverseLabels = SAC_KEYS.filter(function(k){return sacHasData(r,k);})
+                          .map(function(k){return CERT_LABELS[k];});
+    var onCert = [CERT_LABELS.baptism].concat(reverseLabels);
+    // Subtle line letting the user know the other sacraments live on the reverse.
+    var reverseNote = reverseLabels.length
+      ? 'Includes '+joinAnd(reverseLabels)
+      : '';
+    // Even when everything was recorded here, allow printing each individual
+    // sacrament certificate on its own sheet (not only the combined baptism cert).
+    var separateBoxes = availCertKeys.map(function(k){
+      return certPreviewBox(CERT_LABELS[k]+' Certificate', certSubLine(r,k), "printSacramentCert('"+r.id+"','"+k+"')");
+    }).join('');
+    var separateSection = separateBoxes
+      ? '<div class="cert-or-sep">Print individually</div>'+separateBoxes
+      : '';
     certSectionsHTML =
       '<div><div class="detail-section-title">Certificate — '+onCert.join(' · ')+'</div>'+
-        certPreviewBox('Official Baptism Certificate', HOME_CHURCH+', Orange, CA', "printCertificate('"+r.id+"')")+
+        certPreviewBox('Baptism Certificate', HOME_CHURCH+', Orange, CA', "printCertificate('"+r.id+"')", reverseNote)+
+        separateSection+
         reqRowHTML+
       '</div>';
   } else {
@@ -729,8 +766,12 @@ function selectRecord(id) {
     var boxes = availCertKeys.map(function(k){
       return certPreviewBox(CERT_LABELS[k]+' Certificate', certSubLine(r,k), "printSacramentCert('"+r.id+"','"+k+"')");
     }).join('');
+    // List every sacrament that has a cert in the header, e.g. "Certificates — Solemn Communion · Confirmation".
+    var certHeader = availCertKeys.length
+      ? 'Certificate'+(availCertKeys.length>1?'s':'')+' — '+availCertKeys.map(function(k){return CERT_LABELS[k];}).join(' · ')
+      : 'Certificate';
     certSectionsHTML =
-      '<div><div class="detail-section-title">Certificate'+(availCertKeys.length>1?'s':'')+'</div>'+
+      '<div><div class="detail-section-title">'+certHeader+'</div>'+
         (boxes || '<div class="cert-empty-note">No certificate available yet. Record a Baptism at this church, or a Solemn Communion or Confirmation, to generate one.</div>')+
         reqRowHTML+
       '</div>';
@@ -862,7 +903,7 @@ function sacramentFrontRecord(r,key){
   var o={ firstName:r.firstName, father:r.father, mother:r.mother,
           birthPlace:r.birthPlace, dob:r.dob, certNum:r.certNum,
           baptismDate:'', officiant:'', godfather:'', godmother:'' };
-  if(key==='communion'){ o.baptismDate=r.commDate||''; }
+  if(key==='communion'){ o.baptismDate=r.commDate||''; o.officiant=r.commMinister||''; }
   else if(key==='confirmation'){ o.baptismDate=r.confDate||''; o.officiant=r.confMinister||''; }
   return o;
 }
@@ -1022,7 +1063,7 @@ function openModal(id) {
   // Clear all text fields
   ['firstName','birthPlace','officiant','father','mother','godfather','godmother',
    'baptismChurch','baptismLocation',
-   'confChurch','confLocation','confMinister','commChurch','commLocation',
+   'confChurch','confLocation','confMinister','commChurch','commLocation','commMinister',
    'marriageSpouse','marriageChurch','marriageLocation','marriageOfficiant',
    'subChurch','subLocation','subBishop','relOrder','relChurch','relLocation'
   ].forEach(function(f){
@@ -1058,7 +1099,7 @@ function openModal(id) {
     if(r){
       ['firstName','birthPlace','officiant','father','mother','godfather','godmother',
        'baptismChurch','baptismLocation',
-       'confChurch','confLocation','confMinister','commChurch','commLocation',
+       'confChurch','confLocation','confMinister','commChurch','commLocation','commMinister',
        'marriageSpouse','marriageChurch','marriageLocation','marriageOfficiant',
        'subChurch','subLocation','subBishop','relOrder','relChurch','relLocation'
       ].forEach(function(f){
@@ -1288,6 +1329,7 @@ function saveRecord(){
     commDate:document.getElementById('f_commDate').value,
     commChurch:document.getElementById('f_commChurch').value.trim(),
     commLocation:document.getElementById('f_commLocation').value.trim(),
+    commMinister:document.getElementById('f_commMinister').value.trim(),
     marriageDate:document.getElementById('f_marriageDate').value,
     marriageSpouse:document.getElementById('f_marriageSpouse').value.trim(),
     marriageChurch:document.getElementById('f_marriageChurch').value.trim(),
